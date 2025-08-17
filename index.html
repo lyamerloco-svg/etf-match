@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Match - Tax optimization for European investors</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Stripe exact colors */
+            --stripe-blue: #635BFF;
+            --stripe-purple: #7A73FF;
+            --stripe-cyan: #00D4FF;
+            --stripe-green: #00D924;
+            --text-primary: #0A2540;
+            --text-secondary: #425466;
+            --text-light: #6B7C93;
+            --bg-white: #FFFFFF;
+            --bg-light: #F6F9FC;
+            --bg-fade: #F7FAFC;
+            --border-light: #E3E8EE;
+            --gradient-1: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+            --gradient-2: linear-gradient(135deg, #80E9FF 0%, #7A73FF 100%);
+            --gradient-main: linear-gradient(135deg, #635BFF 0%, #00D4FF 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            color: var(--text-primary);
+            background: var(--bg-white);
+            line-height: 1.6;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Navigation - Stripe style */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: saturate(180%) blur(20px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .nav-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+        
+        .nav-button {
+            background: var(--text-primary);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        
+        .nav-button:hover {
+            opacity: 0.8;
+        }
+        
+        /* Hero Section - Stripe style */
+        .hero {
+            margin-top: 60px;
+            padding: 120px 20px 80px;
+            background: var(--bg-white);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -40%;
+            width: 80%;
+            height: 100%;
+            background: radial-gradient(50% 50% at 50% 50%, rgba(99, 91, 255, 0.08) 0%, rgba(99, 91, 255, 0) 100%);
+            pointer-events: none;
+        }
+        
+        .hero-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-title {
+            font-size: 56px;
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+        
+        .gradient-text {
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero-description {
+            font-size: 19px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 32px;
+            font-weight: 400;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: var(--stripe-blue);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--stripe-purple);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--stripe-blue);
+            position: relative;
+        }
+        
+        .btn-secondary::after {
+            content: '→';
+            margin-left: 4px;
+            transition: transform 0.2s;
+        }
+        
+        .btn-secondary:hover::after {
+            transform: translateX(4px);
+        }
+        
+        .hero-visual {
+            position: relative;
+        }
+        
+        .search-demo {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 50px 100px -20px rgba(50, 50, 93, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3);
+            padding: 24px;
+            position: relative;
+            transform: perspective(1000px) rotateY(-10deg) rotateX(5deg);
+            transition: transform 0.3s ease;
+        }
+        
+        .search-demo:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+        }
+        
+        .search-demo-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-light);
+        }
+        
+        .dot:first-child { background: #FF5F57; }
+        .dot:nth-child(2) { background: #FFBD2E; }
+        .dot:nth-child(3) { background: #28CA42; }
+        
+        .search-field {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+        
+        .result-card {
+            background: var(--bg-fade);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .ticker {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+        
+        .match-badge {
+            background: var(--gradient-main);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        /* Features Section - Stripe style */
+        .features {
+            padding: 100px 20px;
+            background: var(--bg-light);
+        }
+        
+        .features-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .features-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+        
+        .section-label {
+            color: var(--stripe-blue);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        
+        .section-title {
+            font-size: 40px;
+            font-weight: 600;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .section-subtitle {
+            font-size: 19px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 48px;
+        }
+        
+        .feature {
+            text-align: left;
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-main);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        
+        .feature-description {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* Demo Section */
+        .demo {
+            padding: 100px 20px;
+            background: white;
+        }
+        
+        .demo-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+        
+        .demo-content {
+            order: 2;
+        }
+        
+        .demo-visual {
+            order: 1;
+        }
+        
+        .code-block {
+            background: var(--text-primary);
+            color: white;
+            padding: 24px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: 0 50px 100px -20px rgba(50, 50, 93, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .code-comment {
+            color: #8B92A9;
+        }
+        
+        .code-string {
+            color: #5CEBDF;
+        }
+        
+        .code-keyword {
+            color: #FFD700;
+        }
+        
+        /* Stats Section */
+        .stats {
+            padding: 100px 20px;
+            background: var(--bg-light);
+        }
+        
+        .stats-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 48px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 48px;
+            font-weight: 600;
+            color: var(--stripe-blue);
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+        
+        .stat-label {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        
+        /* CTA Section */
+        .cta {
+            padding: 100px 20px;
+            background: linear-gradient(180deg, var(--bg-white) 0%, var(--bg-light) 100%);
+        }
+        
+        .cta-container {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .cta-title {
+            font-size: 48px;
+            font-weight: 600;
+            letter-spacing: -1px;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+        
+        .cta-description {
+            font-size: 19px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+        
+        /* Footer */
+        .footer {
+            padding: 48px 20px 24px;
+            background: white;
+            border-top: 1px solid var(--border-light);
+        }
+        
+        .footer-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+        
+        .footer-column h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        
+        .footer-link {
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+            color: var(--stripe-blue);
+        }
+        
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-copyright {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        .footer-logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+            
+            .hero-title {
+                font-size: 40px;
+            }
+            
+            .hero-visual {
+                display: none;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+            
+            .demo-container {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="logo">ETF Match</a>
+            <div class="nav-menu">
+                <a href="#features" class="nav-link">Products</a>
+                <a href="#demo" class="nav-link">Solutions</a>
+                <a href="#developers" class="nav-link">Developers</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#" class="nav-button">Sign in →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Financial infrastructure<br>
+                    for <span class="gradient-text">ETF optimization</span>
+                </h1>
+                <p class="hero-description">
+                    Millions of European investors use ETF Match to find tax-efficient alternatives to US ETFs, 
+                    saving thousands in withholding taxes every year.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary">Start now →</button>
+                    <a href="#" class="btn btn-secondary">Contact sales</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="search-demo">
+                    <div class="search-demo-header">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="search-field">Search: SPY</div>
+                    <div class="result-card">
+                        <div>
+                            <div class="ticker">CSPX</div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">iShares Core S&P 500 UCITS</div>
+                        </div>
+                        <div class="match-badge">98% Match</div>
+                    </div>
+                    <div class="result-card">
+                        <div>
+                            <div class="ticker">VUSA</div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">Vanguard S&P 500 UCITS</div>
+                        </div>
+                        <div class="match-badge">97% Match</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <div class="features-header">
+                <div class="section-label">Unified platform</div>
+                <h2 class="section-title">A fully integrated suite of ETF tools</h2>
+                <p class="section-subtitle">
+                    Everything you need to optimize your ETF portfolio for tax efficiency, all in one place.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">Instant matching</h3>
+                    <p class="feature-description">
+                        Find EU-domiciled alternatives for any US ETF in milliseconds with our proprietary matching algorithm.
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">🔍</div>
+                    <h3 class="feature-title">Deep analysis</h3>
+                    <p class="feature-description">
+                        Compare expense ratios, tracking error, liquidity, and tax implications side by side.
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Portfolio converter</h3>
+                    <p class="feature-description">
+                        Upload your entire US ETF portfolio and get optimized EU alternatives in seconds.
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">🌍</div>
+                    <h3 class="feature-title">Global coverage</h3>
+                    <p class="feature-description">
+                        Support for all major European countries with localized tax calculations and regulations.
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">🔄</div>
+                    <h3 class="feature-title">Real-time data</h3>
+                    <p class="feature-description">
+                        Live prices and performance metrics updated throughout the trading day.
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">🔐</div>
+                    <h3 class="feature-title">Bank-level security</h3>
+                    <p class="feature-description">
+                        Your portfolio data is encrypted and never shared. GDPR compliant by design.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo" id="demo">
+        <div class="demo-container">
+            <div class="demo-visual">
+                <div class="code-block">
+                    <div><span class="code-comment">// Find EU alternative for SPY</span></div>
+                    <div>const match = etfMatch.find({</div>
+                    <div>&nbsp;&nbsp;ticker: <span class="code-string">'SPY'</span>,</div>
+                    <div>&nbsp;&nbsp;domicile: <span class="code-string">'EU'</span>,</div>
+                    <div>&nbsp;&nbsp;maxTER: <span class="code-string">0.10</span></div>
+                    <div>});</div>
+                    <div>&nbsp;</div>
+                    <div><span class="code-comment">// Returns: CSPX (98% match)</span></div>
+                    <div><span class="code-comment">// Tax savings: 15% on dividends</span></div>
+                </div>
+            </div>
+            <div class="demo-content">
+                <div class="section-label">Built for developers</div>
+                <h2 class="section-title">Simple, powerful APIs</h2>
+                <p class="section-subtitle">
+                    Integrate ETF matching into your applications with just a few lines of code. 
+                    RESTful APIs with comprehensive documentation and SDKs for all major languages.
+                </p>
+                <div style="margin-top: 32px;">
+                    <a href="#" class="btn btn-primary">Read the docs →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-container">
+            <div class="stat">
+                <div class="stat-value">250K+</div>
+                <div class="stat-label">Active users</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">€2M+</div>
+                <div class="stat-label">Saved in taxes</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">99.9%</div>
+                <div class="stat-label">Uptime SLA</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">300+</div>
+                <div class="stat-label">ETF pairs</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta" id="pricing">
+        <div class="cta-container">
+            <h2 class="cta-title">Ready to optimize your portfolio?</h2>
+            <p class="cta-description">
+                Join thousands of investors who are already saving on taxes with ETF Match. 
+                Start with our free tier and upgrade as you grow.
+            </p>
+            <div class="hero-buttons" style="justify-content: center;">
+                <button class="btn btn-primary">Start for free →</button>
+                <a href="#" class="btn btn-secondary">Talk to an expert</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-column">
+                <h4>Products</h4>
+                <a href="#" class="footer-link">ETF Matcher</a>
+                <a href="#" class="footer-link">Portfolio Analyzer</a>
+                <a href="#" class="footer-link">Tax Calculator</a>
+                <a href="#" class="footer-link">API</a>
+            </div>
+            <div class="footer-column">
+                <h4>Solutions</h4>
+                <a href="#" class="footer-link">For Investors</a>
+                <a href="#" class="footer-link">For Advisors</a>
+                <a href="#" class="footer-link">For Institutions</a>
+                <a href="#" class="footer-link">For Developers</a>
+            </div>
+            <div class="footer-column">
+                <h4>Resources</h4>
+                <a href="#" class="footer-link">Documentation</a>
+                <a href="#" class="footer-link">Blog</a>
+                <a href="#" class="footer-link">Support</a>
+                <a href="#" class="footer-link">Status</a>
+            </div>
+            <div class="footer-column">
+                <h4>Company</h4>
+                <a href="#" class="footer-link">About</a>
+                <a href="#" class="footer-link">Customers</a>
+                <a href="#" class="footer-link">Partners</a>
+                <a href="#" class="footer-link">Careers</a>
+            </div>
+            <div class="footer-column">
+                <h4>Legal</h4>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Cookie policy</a>
+                <a href="#" class="footer-link">GDPR</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-logo">ETF Match</div>
+            <div class="footer-copyright">© 2024 ETF Match, Inc.</div>
+        </div>
+    </footer>
+</body>
+</html>
