@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETF Match - Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -37,7 +37,6 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* Navigation styles remain the same */
         .top-nav {
             background: white;
             border-bottom: 1px solid var(--border-light);
@@ -477,6 +476,30 @@
             border-radius: 6px;
             margin: 16px 0;
         }
+        
+        .config-box {
+            background: #FEF9C3;
+            border: 1px solid #FCD34D;
+            color: #92400E;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+        
+        .config-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .config-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 6px;
+            margin: 4px 0;
+            font-family: monospace;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -494,7 +517,7 @@
         </div>
         
         <div class="user-section">
-            <span id="etfCounter" style="color: var(--text-secondary); font-size: 13px;">Loading...</span>
+            <span id="etfCounter" style="color: var(--text-secondary); font-size: 13px;">Ready to connect</span>
             <div class="user-avatar">U</div>
         </div>
     </nav>
@@ -505,19 +528,15 @@
         <aside class="sidebar">
             <div class="nav-section">
                 <div class="nav-title">Main</div>
-                <a class="nav-item active" onclick="showPage('dashboard')">
+                <a class="nav-item active">
                     <span class="nav-icon">📊</span>
                     <span>Dashboard</span>
-                </a>
-                <a class="nav-item" onclick="showPage('matcher')">
-                    <span class="nav-icon">🔄</span>
-                    <span>ETF Matcher</span>
                 </a>
             </div>
             
             <div class="nav-section">
                 <div class="nav-title">Data</div>
-                <a class="nav-item" onclick="showPage('all-etfs')">
+                <a class="nav-item">
                     <span class="nav-icon">🌍</span>
                     <span>All ETFs</span>
                 </a>
@@ -526,116 +545,131 @@
         
         <!-- Main Content Area -->
         <main class="main-content" id="mainContent">
-            <!-- Dashboard Page -->
-            <div id="dashboard-page" class="page active">
-                <div class="page-header">
-                    <h1 class="page-title">Dashboard</h1>
-                    <p class="page-subtitle">ETF database overview powered by Supabase</p>
-                </div>
+            <div class="page-header">
+                <h1 class="page-title">ETF Match Dashboard</h1>
+                <p class="page-subtitle">Connect to your Supabase database to load ETF data</p>
+            </div>
+            
+            <!-- Configuration Section -->
+            <div id="configSection" class="config-box">
+                <div class="config-title">🔧 Database Configuration</div>
+                <p style="margin-bottom: 12px;">Enter your Supabase credentials to connect:</p>
                 
-                <!-- Connection Status -->
-                <div id="connectionStatus"></div>
+                <label style="display: block; margin: 8px 0 4px 0; font-weight: 500;">Supabase URL:</label>
+                <input type="text" id="supabaseUrl" class="config-input" placeholder="https://yourproject.supabase.co">
                 
-                <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-label">Total ETFs</div>
-                        <div class="stat-value" id="totalETFs">Loading...</div>
-                        <div class="stat-change positive">
-                            <span>↗</span>
-                            <span>Live from Supabase</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">US ETFs</div>
-                        <div class="stat-value" id="usETFs">Loading...</div>
-                        <div class="stat-change">
-                            <span id="usPercentage">Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">EU/Ireland ETFs</div>
-                        <div class="stat-value" id="euETFs">Loading...</div>
-                        <div class="stat-change">
-                            <span id="euPercentage">Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Database Status</div>
-                        <div class="stat-value" id="dbStatus">🔄</div>
-                        <div class="stat-change">
-                            <span id="dbStatusText">Connecting...</span>
-                        </div>
+                <label style="display: block; margin: 8px 0 4px 0; font-weight: 500;">Anon Key:</label>
+                <input type="text" id="supabaseKey" class="config-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                
+                <button class="btn btn-primary" onclick="connectToSupabase()" style="margin-top: 12px;">
+                    Connect to Database
+                </button>
+                
+                <div id="connectionStatus" style="margin-top: 12px;"></div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total ETFs</div>
+                    <div class="stat-value" id="totalETFs">-</div>
+                    <div class="stat-change">
+                        <span id="connectionStatusText">Not connected</span>
                     </div>
                 </div>
                 
-                <!-- Filters -->
-                <div class="filters-section">
-                    <div class="filters-row">
-                        <div class="filter-group">
-                            <label class="filter-label">Region</label>
-                            <select class="filter-select" id="regionFilter">
-                                <option value="">All Regions</option>
-                                <option value="USA">United States</option>
-                                <option value="Ireland">Ireland</option>
-                                <option value="Luxembourg">Luxembourg</option>
-                                <option value="UK">United Kingdom</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Search</label>
-                            <input type="text" class="filter-select" id="tickerSearch" placeholder="Enter ticker...">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Actions</label>
-                            <button class="btn btn-primary" onclick="refreshData()">Refresh Data</button>
-                        </div>
+                <div class="stat-card">
+                    <div class="stat-label">US ETFs</div>
+                    <div class="stat-value" id="usETFs">-</div>
+                    <div class="stat-change">
+                        <span id="usPercentage">-</span>
                     </div>
                 </div>
                 
-                <!-- Data Table -->
-                <div class="table-container">
-                    <div class="table-header">
-                        <h3 class="table-title">ETF Database (Live from Supabase)</h3>
-                        <div class="table-actions">
-                            <button class="btn" onclick="exportData()">Export CSV</button>
-                        </div>
+                <div class="stat-card">
+                    <div class="stat-label">EU/Ireland ETFs</div>
+                    <div class="stat-value" id="euETFs">-</div>
+                    <div class="stat-change">
+                        <span id="euPercentage">-</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-label">Database Status</div>
+                    <div class="stat-value" id="dbStatus">⚪</div>
+                    <div class="stat-change">
+                        <span id="dbStatusText">Disconnected</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label class="filter-label">Region</label>
+                        <select class="filter-select" id="regionFilter">
+                            <option value="">All Regions</option>
+                            <option value="USA">United States</option>
+                            <option value="Ireland">Ireland</option>
+                            <option value="Luxembourg">Luxembourg</option>
+                            <option value="UK">United Kingdom</option>
+                        </select>
                     </div>
                     
-                    <div id="loadingIndicator" class="loading">
-                        <div class="spinner"></div>
-                        <span style="margin-left: 12px;">Loading ETFs from database...</span>
+                    <div class="filter-group">
+                        <label class="filter-label">Search</label>
+                        <input type="text" class="filter-select" id="tickerSearch" placeholder="Enter ticker...">
                     </div>
                     
-                    <table id="etfTable" style="display: none;">
-                        <thead>
-                            <tr>
-                                <th>Ticker</th>
-                                <th>Name</th>
-                                <th>Domicile</th>
-                                <th>Exchange</th>
-                                <th>TER %</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="etfTableBody">
-                        </tbody>
-                    </table>
-                    
-                    <div class="pagination" id="paginationSection" style="display: none;">
-                        <div class="pagination-info">
-                            Showing <span id="showingStart">0</span>-<span id="showingEnd">0</span> of <span id="totalRecords">0</span> ETFs
-                        </div>
-                        <div class="pagination-controls">
-                            <button class="page-btn" onclick="previousPage()" id="prevBtn">Previous</button>
-                            <button class="page-btn active" id="currentPageBtn">1</button>
-                            <button class="page-btn" onclick="nextPage()" id="nextBtn">Next</button>
-                        </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Actions</label>
+                        <button class="btn btn-primary" onclick="loadETFData()" id="refreshBtn" disabled>Refresh Data</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Table -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">ETF Database</h3>
+                    <div class="table-actions">
+                        <button class="btn" onclick="exportData()" disabled id="exportBtn">Export CSV</button>
+                    </div>
+                </div>
+                
+                <div id="loadingIndicator" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <span style="margin-left: 12px;">Loading ETFs from database...</span>
+                </div>
+                
+                <div id="noDataMessage" class="loading">
+                    <span>Connect to your Supabase database to view ETF data</span>
+                </div>
+                
+                <table id="etfTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <th>Name</th>
+                            <th>Domicile</th>
+                            <th>Exchange</th>
+                            <th>TER %</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="etfTableBody">
+                    </tbody>
+                </table>
+                
+                <div class="pagination" id="paginationSection" style="display: none;">
+                    <div class="pagination-info">
+                        Showing <span id="showingStart">0</span>-<span id="showingEnd">0</span> of <span id="totalRecords">0</span> ETFs
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" onclick="previousPage()" id="prevBtn">Previous</button>
+                        <button class="page-btn active" id="currentPageBtn">1</button>
+                        <button class="page-btn" onclick="nextPage()" id="nextBtn">Next</button>
                     </div>
                 </div>
             </div>
@@ -643,131 +677,146 @@
     </div>
     
     <script>
-        // ========================================
-        // CONFIGURAZIONE SUPABASE
-        // ========================================
-        
-        // 🔥 INSERISCI QUI LE TUE CHIAVI SUPABASE:
-        const SUPABASE_URL = 'https://ynpnagpwaesgieftcmth.supabase.co';  // Sostituisci con il tuo Project URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlucG5hZ3B3YWVzZ2llZnRjbXRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMDQ1NzIsImV4cCI6MjA3MDg4MDU3Mn0.P2DxW50vQCr7d24VDP9MPI9KZu2CXCpw0ARtg2vTG-k';  // Sostituisci con la tua Anon key
-        
-        // Inizializza Supabase client
-        let supabase;
+        // Global variables
+        let supabase = null;
         let etfData = [];
         let filteredData = [];
         let currentPage = 1;
         const itemsPerPage = 20;
         
-        // ========================================
-        // INIZIALIZZAZIONE
-        // ========================================
-        
-        async function initializeApp() {
+        // Connect to Supabase
+        async function connectToSupabase() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+            
+            if (!url || !key) {
+                showMessage('Please enter both URL and Anon Key', 'error');
+                return;
+            }
+            
             try {
-                // Controlla se le chiavi sono configurate
-                if ('PLACEHOLDER' === 'https://ynpnagpwaesgieftcmth.supabase.co' || 'PLACEHOLDER2' === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlucG5hZ3B3YWVzZ2llZnRjbXRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMDQ1NzIsImV4cCI6MjA3MDg4MDU3Mn0.P2DxW50vQCr7d24VDP9MPI9KZu2CXCpw0ARtg2vTG-k') {
-                    showError('⚠️ Configurazione richiesta: inserisci le chiavi Supabase nel codice');
-                    return;
+                // Clear previous status
+                clearMessages();
+                showMessage('Connecting to Supabase...', 'info');
+                
+                // Create Supabase client
+                const { createClient } = supabase;
+                supabase = createClient(url, key);
+                
+                // Test connection
+                const { data, error } = await supabase
+                    .from('etfs')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    throw new Error(`Connection failed: ${error.message}`);
                 }
                 
-                // Inizializza Supabase
-                supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+                // Success!
+                showMessage('✅ Connected to Supabase successfully!', 'success');
+                document.getElementById('configSection').style.display = 'none';
                 
-                showSuccess('✅ Connesso a Supabase!');
+                // Update status
+                document.getElementById('dbStatus').textContent = '🟢';
+                document.getElementById('dbStatusText').textContent = 'Connected';
+                document.getElementById('connectionStatusText').textContent = 'Connected to Supabase';
+                document.getElementById('etfCounter').textContent = 'Loading ETFs...';
                 
-                // Carica i dati
+                // Enable buttons
+                document.getElementById('refreshBtn').disabled = false;
+                document.getElementById('exportBtn').disabled = false;
+                
+                // Load data
                 await loadETFData();
                 
             } catch (error) {
-                console.error('Errore inizializzazione:', error);
-                showError('❌ Errore di connessione: ' + error.message);
+                console.error('Connection error:', error);
+                showMessage(`❌ ${error.message}`, 'error');
+                
+                // Reset status
+                document.getElementById('dbStatus').textContent = '🔴';
+                document.getElementById('dbStatusText').textContent = 'Connection failed';
             }
         }
         
-        // ========================================
-        // CARICAMENTO DATI DA SUPABASE
-        // ========================================
-        
+        // Load ETF data from Supabase
         async function loadETFData() {
+            if (!supabase) {
+                showMessage('Please connect to Supabase first', 'error');
+                return;
+            }
+            
             try {
                 document.getElementById('loadingIndicator').style.display = 'flex';
+                document.getElementById('noDataMessage').style.display = 'none';
                 
-                // Query per ottenere tutti gli ETF
+                // Query all ETFs
                 const { data, error } = await supabase
                     .from('etfs')
                     .select('*')
                     .order('ticker', { ascending: true });
                 
                 if (error) {
-                    throw error;
+                    throw new Error(`Query failed: ${error.message}`);
                 }
                 
                 etfData = data || [];
                 filteredData = [...etfData];
                 
-                console.log(`✅ Caricati ${etfData.length} ETF da Supabase`);
+                console.log(`✅ Loaded ${etfData.length} ETFs from Supabase`);
                 
-                // Aggiorna le statistiche
+                // Update statistics
                 updateStatistics();
                 
-                // Mostra la tabella
+                // Show table
                 displayData();
                 
-                // Nascondi loading
+                // Hide loading, show table
                 document.getElementById('loadingIndicator').style.display = 'none';
                 document.getElementById('etfTable').style.display = 'table';
                 document.getElementById('paginationSection').style.display = 'flex';
                 
+                showMessage(`Loaded ${etfData.length} ETFs successfully!`, 'success');
+                
             } catch (error) {
-                console.error('Errore caricamento dati:', error);
-                showError('❌ Errore nel caricamento: ' + error.message);
+                console.error('Data loading error:', error);
+                showMessage(`❌ Failed to load data: ${error.message}`, 'error');
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
         }
         
-        // ========================================
-        // AGGIORNAMENTO STATISTICHE
-        // ========================================
-        
+        // Update statistics
         function updateStatistics() {
             const total = etfData.length;
             
-            // Conta US ETFs
+            // Count by region
             const usETFs = etfData.filter(etf => 
-                etf.domicilio?.toLowerCase() === 'usa' || 
-                etf.domicilio?.toLowerCase() === 'us'
+                etf.domicilio?.toLowerCase().includes('usa') || 
+                etf.domicilio?.toLowerCase().includes('us')
             ).length;
             
-            // Conta EU ETFs
             const euETFs = etfData.filter(etf => 
-                etf.domicilio?.toLowerCase() === 'ireland' || 
-                etf.domicilio?.toLowerCase() === 'luxembourg' ||
-                etf.domicilio?.toLowerCase() === 'ie' ||
-                etf.domicilio?.toLowerCase() === 'lu'
+                etf.domicilio?.toLowerCase().includes('ireland') || 
+                etf.domicilio?.toLowerCase().includes('luxembourg') ||
+                etf.domicilio?.toLowerCase().includes('ie') ||
+                etf.domicilio?.toLowerCase().includes('lu')
             ).length;
             
-            // Aggiorna i contatori
+            // Update display
             document.getElementById('totalETFs').textContent = total;
             document.getElementById('usETFs').textContent = usETFs;
             document.getElementById('euETFs').textContent = euETFs;
             document.getElementById('etfCounter').textContent = `${total} ETFs loaded`;
             
-            // Calcola percentuali
+            // Calculate percentages
             const usPercentage = total > 0 ? ((usETFs / total) * 100).toFixed(1) : 0;
             const euPercentage = total > 0 ? ((euETFs / total) * 100).toFixed(1) : 0;
             
             document.getElementById('usPercentage').textContent = `${usPercentage}% of total`;
             document.getElementById('euPercentage').textContent = `${euPercentage}% of total`;
-            
-            // Status database
-            document.getElementById('dbStatus').textContent = '✅';
-            document.getElementById('dbStatusText').textContent = 'Connected';
         }
         
-        // ========================================
-        // VISUALIZZAZIONE TABELLA
-        // ========================================
-        
+        // Display data in table
         function displayData() {
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
@@ -780,7 +829,7 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-light);">
-                            Nessun ETF trovato
+                            No ETFs found
                         </td>
                     </tr>
                 `;
@@ -790,7 +839,7 @@
             pageData.forEach(etf => {
                 const row = document.createElement('tr');
                 
-                // Badge per domicilio
+                // Create region badge
                 let domicileBadge = '';
                 const domicilio = etf.domicilio?.toLowerCase() || '';
                 if (domicilio.includes('usa') || domicilio.includes('us')) {
@@ -821,17 +870,14 @@
             updatePagination();
         }
         
-        // ========================================
-        // FILTRI E RICERCA
-        // ========================================
-        
+        // Filter data
         function filterData() {
             const regionFilter = document.getElementById('regionFilter').value.toLowerCase();
             const searchTerm = document.getElementById('tickerSearch').value.toLowerCase();
             const globalSearch = document.getElementById('globalSearch').value.toLowerCase();
             
             filteredData = etfData.filter(etf => {
-                // Filtro regione
+                // Region filter
                 if (regionFilter) {
                     const domicilio = etf.domicilio?.toLowerCase() || '';
                     let matchesRegion = false;
@@ -854,13 +900,12 @@
                     if (!matchesRegion) return false;
                 }
                 
-                // Filtro ricerca ticker
+                // Search filters
                 if (searchTerm) {
                     const ticker = etf.ticker?.toLowerCase() || '';
                     if (!ticker.includes(searchTerm)) return false;
                 }
                 
-                // Ricerca globale
                 if (globalSearch) {
                     const ticker = etf.ticker?.toLowerCase() || '';
                     const nome = etf.nome?.toLowerCase() || '';
@@ -876,10 +921,7 @@
             displayData();
         }
         
-        // ========================================
-        // PAGINAZIONE
-        // ========================================
-        
+        // Pagination
         function updatePagination() {
             const total = filteredData.length;
             const startIndex = (currentPage - 1) * itemsPerPage;
@@ -910,12 +952,24 @@
             }
         }
         
-        // ========================================
-        // FUNZIONI UTILITY
-        // ========================================
+        // Utility functions
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const className = type === 'error' ? 'error-message' : 
+                            type === 'success' ? 'success-message' : 
+                            'config-box';
+            
+            statusDiv.innerHTML = `<div class="${className}">${message}</div>`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            }
+        }
         
-        function refreshData() {
-            loadETFData();
+        function clearMessages() {
+            document.getElementById('connectionStatus').innerHTML = '';
         }
         
         function exportData() {
@@ -928,35 +982,20 @@
             alert(`ETF Details for ${ticker} - Feature coming soon!`);
         }
         
-        function showError(message) {
-            const status = document.getElementById('connectionStatus');
-            status.innerHTML = `<div class="error-message">${message}</div>`;
-        }
-        
-        function showSuccess(message) {
-            const status = document.getElementById('connectionStatus');
-            status.innerHTML = `<div class="success-message">${message}</div>`;
-            setTimeout(() => {
-                status.innerHTML = '';
-            }, 3000);
-        }
-        
-        function showPage(page) {
-            console.log('Navigating to page:', page);
-            // Page navigation logic here
-        }
-        
-        // ========================================
-        // EVENT LISTENERS
-        // ========================================
-        
+        // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
-            initializeApp();
-            
-            // Setup filtri
+            // Setup filters
             document.getElementById('regionFilter').addEventListener('change', filterData);
             document.getElementById('tickerSearch').addEventListener('input', filterData);
             document.getElementById('globalSearch').addEventListener('input', filterData);
+            
+            // Check if we have Supabase
+            if (typeof window.supabase === 'undefined') {
+                showMessage('❌ Supabase library failed to load. Please refresh the page.', 'error');
+            } else {
+                supabase = window.supabase;
+                showMessage('✅ Ready to connect! Please enter your Supabase credentials.', 'info');
+            }
         });
     </script>
 </body>
