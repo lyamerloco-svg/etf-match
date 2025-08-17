@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETF Match - Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/umd/supabase.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -36,7 +37,7 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* Top Navigation */
+        /* Navigation styles remain the same */
         .top-nav {
             background: white;
             border-bottom: 1px solid var(--border-light);
@@ -116,13 +117,11 @@
             font-weight: 600;
         }
         
-        /* Layout */
         .app-container {
             display: flex;
             min-height: calc(100vh - 56px);
         }
         
-        /* Sidebar */
         .sidebar {
             width: 240px;
             background: white;
@@ -173,7 +172,6 @@
             text-align: center;
         }
         
-        /* Main Content */
         .main-content {
             flex: 1;
             padding: 24px;
@@ -196,7 +194,6 @@
             font-size: 14px;
         }
         
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -237,11 +234,6 @@
             color: var(--stripe-green);
         }
         
-        .stat-change.negative {
-            color: var(--stripe-red);
-        }
-        
-        /* Filters */
         .filters-section {
             background: white;
             border-radius: 8px;
@@ -288,36 +280,6 @@
             box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
         }
         
-        .filter-chips {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        
-        .chip {
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid var(--border-light);
-            background: white;
-            color: var(--text-secondary);
-        }
-        
-        .chip:hover {
-            border-color: var(--stripe-blue);
-            color: var(--stripe-blue);
-        }
-        
-        .chip.active {
-            background: var(--stripe-blue);
-            color: white;
-            border-color: var(--stripe-blue);
-        }
-        
-        /* Data Table */
         .table-container {
             background: white;
             border-radius: 8px;
@@ -337,11 +299,6 @@
             font-size: 16px;
             font-weight: 600;
             color: var(--text-primary);
-        }
-        
-        .table-actions {
-            display: flex;
-            gap: 8px;
         }
         
         .btn {
@@ -391,15 +348,6 @@
             white-space: nowrap;
         }
         
-        th.sortable {
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        th.sortable:hover {
-            color: var(--text-secondary);
-        }
-        
         tbody tr {
             border-bottom: 1px solid var(--border-light);
             transition: background 0.1s;
@@ -418,13 +366,6 @@
         .ticker-cell {
             font-weight: 600;
             color: var(--stripe-blue);
-        }
-        
-        .name-cell {
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
         
         .badge {
@@ -452,15 +393,6 @@
             color: #D97706;
         }
         
-        .value-positive {
-            color: var(--stripe-green);
-        }
-        
-        .value-negative {
-            color: var(--stripe-red);
-        }
-        
-        /* Loading State */
         .loading {
             display: flex;
             justify-content: center;
@@ -482,7 +414,6 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Pagination */
         .pagination {
             display: flex;
             justify-content: space-between;
@@ -528,6 +459,24 @@
             color: white;
             border-color: var(--stripe-blue);
         }
+        
+        .error-message {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+        
+        .success-message {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: #16A34A;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
     </style>
 </head>
 <body>
@@ -540,12 +489,12 @@
         <div class="search-bar">
             <div class="search-wrapper">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="globalSearch" placeholder="Search ETFs by ticker, name, or ISIN...">
+                <input type="text" class="search-input" id="globalSearch" placeholder="Search ETFs by ticker, name...">
             </div>
         </div>
         
         <div class="user-section">
-            <span style="color: var(--text-secondary); font-size: 13px;">741 ETFs loaded</span>
+            <span id="etfCounter" style="color: var(--text-secondary); font-size: 13px;">Loading...</span>
             <div class="user-avatar">U</div>
         </div>
     </nav>
@@ -564,38 +513,10 @@
                     <span class="nav-icon">🔄</span>
                     <span>ETF Matcher</span>
                 </a>
-                <a class="nav-item" onclick="showPage('portfolio')">
-                    <span class="nav-icon">💼</span>
-                    <span>Portfolio</span>
-                </a>
-            </div>
-            
-            <div class="nav-section">
-                <div class="nav-title">Analysis</div>
-                <a class="nav-item" onclick="showPage('compare')">
-                    <span class="nav-icon">⚖️</span>
-                    <span>Compare</span>
-                </a>
-                <a class="nav-item" onclick="showPage('screener')">
-                    <span class="nav-icon">🔍</span>
-                    <span>Screener</span>
-                </a>
-                <a class="nav-item" onclick="showPage('tax')">
-                    <span class="nav-icon">💰</span>
-                    <span>Tax Calculator</span>
-                </a>
             </div>
             
             <div class="nav-section">
                 <div class="nav-title">Data</div>
-                <a class="nav-item" onclick="showPage('us-etfs')">
-                    <span class="nav-icon">🇺🇸</span>
-                    <span>US ETFs</span>
-                </a>
-                <a class="nav-item" onclick="showPage('eu-etfs')">
-                    <span class="nav-icon">🇪🇺</span>
-                    <span>EU ETFs</span>
-                </a>
                 <a class="nav-item" onclick="showPage('all-etfs')">
                     <span class="nav-icon">🌍</span>
                     <span>All ETFs</span>
@@ -609,42 +530,44 @@
             <div id="dashboard-page" class="page active">
                 <div class="page-header">
                     <h1 class="page-title">Dashboard</h1>
-                    <p class="page-subtitle">Overview of your ETF database and portfolio performance</p>
+                    <p class="page-subtitle">ETF database overview powered by Supabase</p>
                 </div>
+                
+                <!-- Connection Status -->
+                <div id="connectionStatus"></div>
                 
                 <!-- Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total ETFs</div>
-                        <div class="stat-value" id="totalETFs">741</div>
+                        <div class="stat-value" id="totalETFs">Loading...</div>
                         <div class="stat-change positive">
-                            <span>↑</span>
-                            <span>Complete database loaded</span>
+                            <span>↗</span>
+                            <span>Live from Supabase</span>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-label">US ETFs</div>
-                        <div class="stat-value" id="usETFs">187</div>
+                        <div class="stat-value" id="usETFs">Loading...</div>
                         <div class="stat-change">
-                            <span>25.2% of total</span>
+                            <span id="usPercentage">Loading...</span>
                         </div>
                     </div>
                     
                     <div class="stat-card">
-                        <div class="stat-label">EU/UCITS ETFs</div>
-                        <div class="stat-value" id="euETFs">123</div>
+                        <div class="stat-label">EU/Ireland ETFs</div>
+                        <div class="stat-value" id="euETFs">Loading...</div>
                         <div class="stat-change">
-                            <span>16.6% of total</span>
+                            <span id="euPercentage">Loading...</span>
                         </div>
                     </div>
                     
                     <div class="stat-card">
-                        <div class="stat-label">Matched Pairs</div>
-                        <div class="stat-value" id="matchedPairs">45+</div>
-                        <div class="stat-change positive">
-                            <span>↑</span>
-                            <span>US ↔ EU mappings</span>
+                        <div class="stat-label">Database Status</div>
+                        <div class="stat-value" id="dbStatus">🔄</div>
+                        <div class="stat-change">
+                            <span id="dbStatusText">Connecting...</span>
                         </div>
                     </div>
                 </div>
@@ -656,43 +579,21 @@
                             <label class="filter-label">Region</label>
                             <select class="filter-select" id="regionFilter">
                                 <option value="">All Regions</option>
-                                <option value="US">United States</option>
-                                <option value="EU">Europe</option>
+                                <option value="USA">United States</option>
+                                <option value="Ireland">Ireland</option>
+                                <option value="Luxembourg">Luxembourg</option>
                                 <option value="UK">United Kingdom</option>
-                                <option value="Other">Other</option>
                             </select>
                         </div>
                         
                         <div class="filter-group">
-                            <label class="filter-label">Category</label>
-                            <select class="filter-select" id="categoryFilter">
-                                <option value="">All Categories</option>
-                                <option value="Large Blend">Large Blend</option>
-                                <option value="Technology">Technology</option>
-                                <option value="Commodities">Commodities</option>
-                                <option value="Real Estate">Real Estate</option>
-                            </select>
+                            <label class="filter-label">Search</label>
+                            <input type="text" class="filter-select" id="tickerSearch" placeholder="Enter ticker...">
                         </div>
                         
                         <div class="filter-group">
-                            <label class="filter-label">Provider</label>
-                            <select class="filter-select" id="providerFilter">
-                                <option value="">All Providers</option>
-                                <option value="Vanguard">Vanguard</option>
-                                <option value="iShares">iShares</option>
-                                <option value="SPDR">SPDR</option>
-                                <option value="Invesco">Invesco</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Quick Filters</label>
-                            <div class="filter-chips">
-                                <button class="chip active" onclick="filterByType('all')">All</button>
-                                <button class="chip" onclick="filterByType('low-cost')">Low Cost (TER < 0.1%)</button>
-                                <button class="chip" onclick="filterByType('high-volume')">High Volume</button>
-                                <button class="chip" onclick="filterByType('dividend')">Dividend Focus</button>
-                            </div>
+                            <label class="filter-label">Actions</label>
+                            <button class="btn btn-primary" onclick="refreshData()">Refresh Data</button>
                         </div>
                     </div>
                 </div>
@@ -700,285 +601,41 @@
                 <!-- Data Table -->
                 <div class="table-container">
                     <div class="table-header">
-                        <h3 class="table-title">ETF Database</h3>
+                        <h3 class="table-title">ETF Database (Live from Supabase)</h3>
                         <div class="table-actions">
                             <button class="btn" onclick="exportData()">Export CSV</button>
-                            <button class="btn btn-primary" onclick="showAddETF()">Add ETF</button>
                         </div>
                     </div>
                     
-                    <table id="etfTable">
+                    <div id="loadingIndicator" class="loading">
+                        <div class="spinner"></div>
+                        <span style="margin-left: 12px;">Loading ETFs from database...</span>
+                    </div>
+                    
+                    <table id="etfTable" style="display: none;">
                         <thead>
                             <tr>
-                                <th class="sortable" onclick="sortTable('ticker')">Ticker ↕</th>
-                                <th class="sortable" onclick="sortTable('name')">Name ↕</th>
-                                <th class="sortable" onclick="sortTable('domicile')">Region ↕</th>
-                                <th class="sortable" onclick="sortTable('ter')">TER % ↕</th>
-                                <th class="sortable" onclick="sortTable('aum')">AUM (B$) ↕</th>
-                                <th class="sortable" onclick="sortTable('price')">Price ↕</th>
-                                <th class="sortable" onclick="sortTable('volume')">Volume ↕</th>
-                                <th class="sortable" onclick="sortTable('ytd')">YTD % ↕</th>
+                                <th>Ticker</th>
+                                <th>Name</th>
+                                <th>Domicile</th>
+                                <th>Exchange</th>
+                                <th>TER %</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="etfTableBody">
-                            <!-- Data will be loaded here -->
                         </tbody>
                     </table>
                     
-                    <div class="pagination">
+                    <div class="pagination" id="paginationSection" style="display: none;">
                         <div class="pagination-info">
-                            Showing <span id="showingStart">1</span>-<span id="showingEnd">20</span> of <span id="totalRecords">741</span> ETFs
+                            Showing <span id="showingStart">0</span>-<span id="showingEnd">0</span> of <span id="totalRecords">0</span> ETFs
                         </div>
                         <div class="pagination-controls">
                             <button class="page-btn" onclick="previousPage()" id="prevBtn">Previous</button>
-                            <button class="page-btn active">1</button>
-                            <button class="page-btn">2</button>
-                            <button class="page-btn">3</button>
-                            <span style="padding: 0 8px;">...</span>
-                            <button class="page-btn">37</button>
+                            <button class="page-btn active" id="currentPageBtn">1</button>
                             <button class="page-btn" onclick="nextPage()" id="nextBtn">Next</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ETF Matcher Page -->
-            <div id="matcher-page" class="page" style="display:none;">
-                <div class="page-header">
-                    <h1 class="page-title">ETF Matcher</h1>
-                    <p class="page-subtitle">Find EU/UCITS equivalents for US ETFs and save on taxes</p>
-                </div>
-                
-                <div class="filters-section">
-                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end;">
-                        <div class="filter-group">
-                            <label class="filter-label">Enter US ETF Ticker</label>
-                            <input type="text" class="filter-select" id="matcherInput" placeholder="e.g., SPY, VOO, QQQ" style="padding: 10px;">
-                        </div>
-                        <button class="btn btn-primary" onclick="findMatches()" style="height: 40px; padding: 0 24px;">Find EU Alternatives</button>
-                    </div>
-                </div>
-                
-                <div id="matchResults" style="margin-top: 24px;">
-                    <!-- Popular mappings shown by default -->
-                    <h3 style="margin-bottom: 16px; color: var(--text-primary);">Popular US → EU ETF Mappings</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <div class="ticker-cell">SPY → VUSA</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">SPDR S&P 500 → Vanguard S&P 500 UCITS</div>
-                                </div>
-                                <div class="badge badge-eu">98% Match</div>
-                            </div>
-                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light);">
-                                <div style="display: flex; justify-content: space-between; font-size: 13px;">
-                                    <span>TER: 0.09% → 0.07%</span>
-                                    <span class="value-positive">Save 0.02%</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <div class="ticker-cell">QQQ → EQQQ</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Invesco QQQ → Invesco NASDAQ-100 UCITS</div>
-                                </div>
-                                <div class="badge badge-eu">97% Match</div>
-                            </div>
-                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light);">
-                                <div style="display: flex; justify-content: space-between; font-size: 13px;">
-                                    <span>TER: 0.20% → 0.30%</span>
-                                    <span class="value-negative">+0.10%</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <div class="ticker-cell">VTI → VWCE</div>
-                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Vanguard Total Stock → Vanguard All-World ACC</div>
-                                </div>
-                                <div class="badge badge-eu">85% Match</div>
-                            </div>
-                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light);">
-                                <div style="display: flex; justify-content: space-between; font-size: 13px;">
-                                    <span>TER: 0.03% → 0.22%</span>
-                                    <span class="value-negative">+0.19%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Portfolio Builder Page -->
-            <div id="portfolio-page" class="page" style="display:none;">
-                <div class="page-header">
-                    <h1 class="page-title">Portfolio Builder</h1>
-                    <p class="page-subtitle">Build and optimize your ETF portfolio</p>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px;">
-                    <div>
-                        <div class="table-container">
-                            <div class="table-header">
-                                <h3 class="table-title">Add ETFs to Portfolio</h3>
-                            </div>
-                            <div style="padding: 20px;">
-                                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; margin-bottom: 16px;">
-                                    <input type="text" id="portfolioSearch" placeholder="Search ETF..." class="filter-select">
-                                    <input type="number" id="portfolioShares" placeholder="Shares" class="filter-select" min="1">
-                                    <input type="number" id="portfolioPrice" placeholder="Price" class="filter-select" step="0.01">
-                                    <button class="btn btn-primary" onclick="addToPortfolio()">Add</button>
-                                </div>
-                                
-                                <div id="portfolioList" style="max-height: 400px; overflow-y: auto;">
-                                    <!-- Portfolio items will be added here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <div class="stat-card" style="height: fit-content;">
-                            <h3 style="margin-bottom: 16px;">Portfolio Summary</h3>
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div>
-                                    <div class="stat-label">Total Value</div>
-                                    <div class="stat-value" id="portfolioValue">$0</div>
-                                </div>
-                                <div>
-                                    <div class="stat-label">Number of Holdings</div>
-                                    <div class="stat-value" id="portfolioCount">0</div>
-                                </div>
-                                <div>
-                                    <div class="stat-label">Weighted Avg TER</div>
-                                    <div class="stat-value" id="portfolioTER">0%</div>
-                                </div>
-                                <div>
-                                    <div class="stat-label">Annual Costs</div>
-                                    <div class="stat-value" id="portfolioCost">$0</div>
-                                </div>
-                            </div>
-                            
-                            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-light);">
-                                <h4 style="margin-bottom: 12px;">Allocation by Region</h4>
-                                <div id="portfolioAllocation">
-                                    <!-- Allocation chart will appear here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Tax Calculator Page -->
-            <div id="tax-page" class="page" style="display:none;">
-                <div class="page-header">
-                    <h1 class="page-title">Tax Calculator</h1>
-                    <p class="page-subtitle">Calculate withholding tax impact on your ETF investments</p>
-                </div>
-                
-                <div class="filters-section">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
-                        <div class="filter-group">
-                            <label class="filter-label">Your Country</label>
-                            <select class="filter-select" id="taxCountry">
-                                <option value="IT">Italy</option>
-                                <option value="DE">Germany</option>
-                                <option value="FR">France</option>
-                                <option value="ES">Spain</option>
-                                <option value="NL">Netherlands</option>
-                                <option value="BE">Belgium</option>
-                                <option value="CH">Switzerland</option>
-                                <option value="UK">United Kingdom</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">ETF Domicile</label>
-                            <select class="filter-select" id="taxDomicile">
-                                <option value="US">United States</option>
-                                <option value="IE">Ireland (UCITS)</option>
-                                <option value="LU">Luxembourg (UCITS)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Investment Amount</label>
-                            <input type="number" class="filter-select" id="taxAmount" placeholder="€10,000" value="10000">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="filter-label">Dividend Yield %</label>
-                            <input type="number" class="filter-select" id="taxYield" placeholder="2%" value="2" step="0.1">
-                        </div>
-                    </div>
-                    
-                    <button class="btn btn-primary" onclick="calculateTax()" style="margin-top: 16px;">Calculate Tax Impact</button>
-                </div>
-                
-                <div id="taxResults" style="margin-top: 24px;">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Annual Dividends</div>
-                            <div class="stat-value" id="annualDividends">€0</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Withholding Tax</div>
-                            <div class="stat-value" id="withholdingTax">€0</div>
-                            <div class="stat-change negative">
-                                <span id="taxRate">0% rate</span>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Net Dividends</div>
-                            <div class="stat-value" id="netDividends">€0</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">10-Year Tax Cost</div>
-                            <div class="stat-value" id="tenYearCost">€0</div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-container" style="margin-top: 24px;">
-                        <div class="table-header">
-                            <h3 class="table-title">Tax Comparison: US ETF vs UCITS ETF</h3>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Scenario</th>
-                                    <th>Withholding Tax</th>
-                                    <th>Annual Cost</th>
-                                    <th>10-Year Cost</th>
-                                    <th>Difference</th>
-                                </tr>
-                            </thead>
-                            <tbody id="taxComparisonTable">
-                                <tr>
-                                    <td>US ETF (Direct)</td>
-                                    <td>30%</td>
-                                    <td>€60</td>
-                                    <td>€600</td>
-                                    <td>-</td>
-                                </tr>
-                                <tr>
-                                    <td>Ireland UCITS ETF</td>
-                                    <td>15%</td>
-                                    <td>€30</td>
-                                    <td>€300</td>
-                                    <td class="value-positive">Save €300</td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -986,152 +643,132 @@
     </div>
     
     <script>
-        // Initialize app
+        // ========================================
+        // CONFIGURAZIONE SUPABASE
+        // ========================================
+        
+        // 🔥 INSERISCI QUI LE TUE CHIAVI SUPABASE:
+        const SUPABASE_URL = 'https://ynpnagpwaesgieftcmth.supabase.co';  // Sostituisci con il tuo Project URL
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlucG5hZ3B3YWVzZ2llZnRjbXRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMDQ1NzIsImV4cCI6MjA3MDg4MDU3Mn0.P2DxW50vQCr7d24VDP9MPI9KZu2CXCpw0ARtg2vTG-k';  // Sostituisci con la tua Anon key
+        
+        // Inizializza Supabase client
+        let supabase;
         let etfData = [];
+        let filteredData = [];
         let currentPage = 1;
         const itemsPerPage = 20;
-        let currentSort = { column: null, ascending: true };
-        let filters = { region: '', category: '', provider: '', search: '' };
         
-        // Load ETF data
-        async function loadETFData() {
-            // Data is now embedded directly
-            etfData = getAllETFData();
-            console.log(`Loaded ${etfData.length} ETFs`);
-            
-            // Update stats
-            document.querySelector('.user-section span').textContent = `${etfData.length} ETFs loaded`;
-            
-            // Calculate and update statistics
-            updateStatistics();
-            
-            displayData();
-        }
+        // ========================================
+        // INIZIALIZZAZIONE
+        // ========================================
         
-        function updateStatistics() {
-            // Count US ETFs
-            const usETFs = etfData.filter(etf => 
-                etf.Domicilio === 'US' || etf.Domicilio === '🇺🇸 US'
-            ).length;
-            
-            // Count EU ETFs  
-            const euETFs = etfData.filter(etf => 
-                etf.Domicilio === 'IE' || 
-                etf.Domicilio === 'LU' ||
-                etf.Domicilio === '🇮🇪 IE' ||
-                (etf.Nome && etf.Nome.includes('UCITS'))
-            ).length;
-            
-            // Update stat cards if on dashboard
-            const statsGrid = document.querySelector('.stats-grid');
-            if (statsGrid) {
-                statsGrid.children[0].querySelector('.stat-value').textContent = etfData.length;
-                statsGrid.children[1].querySelector('.stat-value').textContent = usETFs;
-                statsGrid.children[2].querySelector('.stat-value').textContent = euETFs;
+        async function initializeApp() {
+            try {
+                // Controlla se le chiavi sono configurate
+                if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+                    showError('⚠️ Configurazione richiesta: inserisci le chiavi Supabase nel codice');
+                    return;
+                }
+                
+                // Inizializza Supabase
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                showSuccess('✅ Connesso a Supabase!');
+                
+                // Carica i dati
+                await loadETFData();
+                
+            } catch (error) {
+                console.error('Errore inizializzazione:', error);
+                showError('❌ Errore di connessione: ' + error.message);
             }
         }
         
-        // Get all ETF data (embedded) - FULL DATABASE 741 ETFs
-        function getAllETFData() {
-            // Complete database with all 741 ETFs from your file
-            return [
-                {"Ticker":"SPY","Nome":"SPDR S&P 500 ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"652.63","Prezzo":"657.61","Valuta":"USD","Volume":"50234000","Categoria":"Large Blend","Provider":"SPDR","YTD (%)":"28.5"},
-                {"Ticker":"IVV","Nome":"iShares Core S&P 500 ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.03","AUM (B$)":"639.6","Prezzo":"661.35","Valuta":"USD","Volume":"3456000","Categoria":"Large Blend","Provider":"iShares","YTD (%)":"28.3"},
-                {"Ticker":"VOO","Nome":"Vanguard S&P 500 ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.03","AUM (B$)":"1330.96","Prezzo":"606.74","Valuta":"USD","Volume":"2890000","Categoria":"Large Blend","Provider":"Vanguard","YTD (%)":"28.4"},
-                {"Ticker":"VTI","Nome":"Vanguard Total Stock Market Index Fund ETF Shares","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.03","AUM (B$)":"544.18","Prezzo":"310.8","Valuta":"USD","Volume":"1234000","Categoria":"Large Blend","Provider":"Vanguard","YTD (%)":"24.1"},
-                {"Ticker":"QQQ","Nome":"Invesco QQQ Trust","Domicilio":"US","Exchange":"NASDAQ","TER (%)":"0.20","AUM (B$)":"335.9","Prezzo":"580.67","Valuta":"USD","Volume":"35670000","Categoria":"Technology","Provider":"Invesco","YTD (%)":"32.5"},
-                {"Ticker":"VEA","Nome":"Vanguard FTSE Developed Markets Index Fund ETF Shares","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.05","AUM (B$)":"108.32","Prezzo":"57.23","Valuta":"USD","Volume":"7890000","Categoria":"Foreign Large Blend","Provider":"Vanguard","YTD (%)":"12.3"},
-                {"Ticker":"VUG","Nome":"Vanguard Growth Index Fund ETF Shares","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.04","AUM (B$)":"209.67","Prezzo":"460.24","Valuta":"USD","Volume":"567000","Categoria":"Large Growth","Provider":"Vanguard","YTD (%)":"35.2"},
-                {"Ticker":"IEFA","Nome":"iShares Core MSCI EAFE ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.07","AUM (B$)":"117.26","Prezzo":"84.99","Valuta":"USD","Volume":"4567000","Categoria":"Foreign Large Blend","Provider":"iShares","YTD (%)":"11.8"},
-                {"Ticker":"VWO","Nome":"Vanguard FTSE Emerging Markets Index Fund ETF Shares","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.08","AUM (B$)":"95.48","Prezzo":"51.59","Valuta":"USD","Volume":"8900000","Categoria":"Emerging Markets","Provider":"Vanguard","YTD (%)":"8.5"},
-                {"Ticker":"VXUS","Nome":"Vanguard Total International Stock Index Fund ETF Shares","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.08","AUM (B$)":"88.72","Prezzo":"68.3","Valuta":"USD","Volume":"1234000","Categoria":"Foreign Large Blend","Provider":"Vanguard","YTD (%)":"10.2"},
+        // ========================================
+        // CARICAMENTO DATI DA SUPABASE
+        // ========================================
+        
+        async function loadETFData() {
+            try {
+                document.getElementById('loadingIndicator').style.display = 'flex';
                 
-                // European/UCITS ETFs
-                {"Ticker":"VUSA","Nome":"Vanguard S&P 500 UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.07","AUM (B$)":"45.3","Prezzo":"87.45","Valuta":"GBP","Volume":"890000","Categoria":"Large Blend","Provider":"Vanguard","YTD (%)":"27.8"},
-                {"Ticker":"CSPX","Nome":"iShares Core S&P 500 UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.07","AUM (B$)":"78.2","Prezzo":"546.30","Valuta":"USD","Volume":"1234000","Categoria":"Large Blend","Provider":"iShares","YTD (%)":"28.1"},
-                {"Ticker":"EQQQ","Nome":"Invesco EQQQ NASDAQ-100 UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.30","AUM (B$)":"12.5","Prezzo":"423.50","Valuta":"USD","Volume":"567000","Categoria":"Technology","Provider":"Invesco","YTD (%)":"31.9"},
-                {"Ticker":"VWRA","Nome":"Vanguard FTSE All-World UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.22","AUM (B$)":"23.4","Prezzo":"125.60","Valuta":"USD","Volume":"345000","Categoria":"World Large Stock","Provider":"Vanguard","YTD (%)":"19.5"},
-                {"Ticker":"IWDA","Nome":"iShares Core MSCI World UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.20","AUM (B$)":"67.8","Prezzo":"98.75","Valuta":"USD","Volume":"2340000","Categoria":"World Large Stock","Provider":"iShares","YTD (%)":"20.1"},
-                {"Ticker":"SWDA","Nome":"iShares Core MSCI World UCITS ETF USD (Acc)","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.20","AUM (B$)":"56.7","Prezzo":"102.30","Valuta":"USD","Volume":"1890000","Categoria":"World Large Stock","Provider":"iShares","YTD (%)":"20.3"},
-                {"Ticker":"EMIM","Nome":"iShares Core MSCI EM IMI UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.18","AUM (B$)":"18.9","Prezzo":"34.56","Valuta":"USD","Volume":"456000","Categoria":"Emerging Markets","Provider":"iShares","YTD (%)":"7.8"},
-                {"Ticker":"VFEM","Nome":"Vanguard FTSE Emerging Markets UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.22","AUM (B$)":"3.4","Prezzo":"61.20","Valuta":"USD","Volume":"234000","Categoria":"Emerging Markets","Provider":"Vanguard","YTD (%)":"8.2"},
-                {"Ticker":"VEUR","Nome":"Vanguard FTSE Developed Europe UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.10","AUM (B$)":"4.5","Prezzo":"39.80","Valuta":"EUR","Volume":"567000","Categoria":"Europe Large Stock","Provider":"Vanguard","YTD (%)":"14.5"},
-                {"Ticker":"IEUS","Nome":"iShares MSCI Europe UCITS ETF","Domicilio":"IE","Exchange":"LSE","TER (%)":"0.20","AUM (B$)":"8.7","Prezzo":"78.90","Valuta":"EUR","Volume":"890000","Categoria":"Europe Large Stock","Provider":"iShares","YTD (%)":"13.9"},
+                // Query per ottenere tutti gli ETF
+                const { data, error } = await supabase
+                    .from('etfs')
+                    .select('*')
+                    .order('ticker', { ascending: true });
                 
-                // More ETFs
-                {"Ticker":"AGG","Nome":"iShares Core U.S. Aggregate Bond ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.03","AUM (B$)":"123.45","Prezzo":"98.50","Valuta":"USD","Volume":"5670000","Categoria":"Intermediate Core Bond","Provider":"iShares","YTD (%)":"2.1"},
-                {"Ticker":"BND","Nome":"Vanguard Total Bond Market ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.03","AUM (B$)":"112.30","Prezzo":"72.45","Valuta":"USD","Volume":"4560000","Categoria":"Intermediate Core Bond","Provider":"Vanguard","YTD (%)":"1.9"},
-                {"Ticker":"GLD","Nome":"SPDR Gold Shares","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.40","AUM (B$)":"78.90","Prezzo":"245.60","Valuta":"USD","Volume":"7890000","Categoria":"Commodities Focused","Provider":"SPDR","YTD (%)":"12.3"},
-                {"Ticker":"VNQ","Nome":"Vanguard Real Estate ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.13","AUM (B$)":"45.60","Prezzo":"98.70","Valuta":"USD","Volume":"3450000","Categoria":"Real Estate","Provider":"Vanguard","YTD (%)":"-2.5"},
-                {"Ticker":"IWM","Nome":"iShares Russell 2000 ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.19","AUM (B$)":"78.90","Prezzo":"223.40","Valuta":"USD","Volume":"23450000","Categoria":"Small Blend","Provider":"iShares","YTD (%)":"15.6"},
-                {"Ticker":"EFA","Nome":"iShares MSCI EAFE ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.32","AUM (B$)":"56.70","Prezzo":"89.30","Valuta":"USD","Volume":"12340000","Categoria":"Foreign Large Blend","Provider":"iShares","YTD (%)":"11.2"},
-                {"Ticker":"EEM","Nome":"iShares MSCI Emerging Markets ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.68","AUM (B$)":"23.40","Prezzo":"45.60","Valuta":"USD","Volume":"34560000","Categoria":"Emerging Markets","Provider":"iShares","YTD (%)":"6.7"},
-                {"Ticker":"IWF","Nome":"iShares Russell 1000 Growth ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.19","AUM (B$)":"89.00","Prezzo":"389.20","Valuta":"USD","Volume":"890000","Categoria":"Large Growth","Provider":"iShares","YTD (%)":"36.8"},
-                {"Ticker":"IWD","Nome":"iShares Russell 1000 Value ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.19","AUM (B$)":"67.80","Prezzo":"189.30","Valuta":"USD","Volume":"1230000","Categoria":"Large Value","Provider":"iShares","YTD (%)":"18.9"},
-                {"Ticker":"VB","Nome":"Vanguard Small-Cap ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.05","AUM (B$)":"56.70","Prezzo":"245.60","Valuta":"USD","Volume":"456000","Categoria":"Small Blend","Provider":"Vanguard","YTD (%)":"14.3"},
+                if (error) {
+                    throw error;
+                }
                 
-                // Technology ETFs
-                {"Ticker":"XLK","Nome":"Technology Select Sector SPDR Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"89.00","Prezzo":"234.50","Valuta":"USD","Volume":"5670000","Categoria":"Technology","Provider":"SPDR","YTD (%)":"38.5"},
-                {"Ticker":"VGT","Nome":"Vanguard Information Technology ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.10","AUM (B$)":"78.90","Prezzo":"678.90","Valuta":"USD","Volume":"456000","Categoria":"Technology","Provider":"Vanguard","YTD (%)":"39.2"},
-                {"Ticker":"SMH","Nome":"VanEck Semiconductor ETF","Domicilio":"US","Exchange":"NASDAQ","TER (%)":"0.35","AUM (B$)":"23.40","Prezzo":"289.30","Valuta":"USD","Volume":"3450000","Categoria":"Technology","Provider":"VanEck","YTD (%)":"45.6"},
-                {"Ticker":"SOXX","Nome":"iShares Semiconductor ETF","Domicilio":"US","Exchange":"NASDAQ","TER (%)":"0.35","AUM (B$)":"15.60","Prezzo":"234.50","Valuta":"USD","Volume":"2340000","Categoria":"Technology","Provider":"iShares","YTD (%)":"44.8"},
+                etfData = data || [];
+                filteredData = [...etfData];
                 
-                // Healthcare ETFs
-                {"Ticker":"XLV","Nome":"Health Care Select Sector SPDR Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"45.60","Prezzo":"145.60","Valuta":"USD","Volume":"7890000","Categoria":"Healthcare","Provider":"SPDR","YTD (%)":"8.9"},
-                {"Ticker":"VHT","Nome":"Vanguard Health Care ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.10","AUM (B$)":"18.90","Prezzo":"278.90","Valuta":"USD","Volume":"234000","Categoria":"Healthcare","Provider":"Vanguard","YTD (%)":"7.8"},
-                {"Ticker":"IBB","Nome":"iShares Biotechnology ETF","Domicilio":"US","Exchange":"NASDAQ","TER (%)":"0.44","AUM (B$)":"9.80","Prezzo":"145.60","Valuta":"USD","Volume":"1230000","Categoria":"Healthcare","Provider":"iShares","YTD (%)":"-2.3"},
+                console.log(`✅ Caricati ${etfData.length} ETF da Supabase`);
                 
-                // Financial ETFs
-                {"Ticker":"XLF","Nome":"Financial Select Sector SPDR Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"45.60","Prezzo":"48.90","Valuta":"USD","Volume":"34560000","Categoria":"Financial","Provider":"SPDR","YTD (%)":"35.6"},
-                {"Ticker":"VFH","Nome":"Vanguard Financials ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.10","AUM (B$)":"12.30","Prezzo":"112.30","Valuta":"USD","Volume":"890000","Categoria":"Financial","Provider":"Vanguard","YTD (%)":"34.8"},
-                {"Ticker":"KRE","Nome":"SPDR S&P Regional Banking ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.35","AUM (B$)":"3.40","Prezzo":"67.80","Valuta":"USD","Volume":"5670000","Categoria":"Financial","Provider":"SPDR","YTD (%)":"28.9"},
+                // Aggiorna le statistiche
+                updateStatistics();
                 
-                // Energy ETFs
-                {"Ticker":"XLE","Nome":"Energy Select Sector SPDR Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"38.90","Prezzo":"89.30","Valuta":"USD","Volume":"12340000","Categoria":"Energy","Provider":"SPDR","YTD (%)":"12.3"},
-                {"Ticker":"VDE","Nome":"Vanguard Energy ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.10","AUM (B$)":"7.80","Prezzo":"134.50","Valuta":"USD","Volume":"456000","Categoria":"Energy","Provider":"Vanguard","YTD (%)":"11.8"},
-                {"Ticker":"XOP","Nome":"SPDR S&P Oil & Gas Exploration & Production ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.35","AUM (B$)":"4.50","Prezzo":"156.70","Valuta":"USD","Volume":"3450000","Categoria":"Energy","Provider":"SPDR","YTD (%)":"8.9"},
+                // Mostra la tabella
+                displayData();
                 
-                // Consumer ETFs
-                {"Ticker":"XLY","Nome":"Consumer Discretionary Select Sector SPDR Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"21.30","Prezzo":"198.70","Valuta":"USD","Volume":"2340000","Categoria":"Consumer Cyclical","Provider":"SPDR","YTD (%)":"22.3"},
-                {"Ticker":"XLP","Nome":"Consumer Staples Select Sector SPDR Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.09","AUM (B$)":"18.90","Prezzo":"78.90","Valuta":"USD","Volume":"7890000","Categoria":"Consumer Defensive","Provider":"SPDR","YTD (%)":"8.7"},
-                {"Ticker":"VCR","Nome":"Vanguard Consumer Discretionary ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.10","AUM (B$)":"6.70","Prezzo":"378.90","Valuta":"USD","Volume":"123000","Categoria":"Consumer Cyclical","Provider":"Vanguard","YTD (%)":"21.5"},
+                // Nascondi loading
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('etfTable').style.display = 'table';
+                document.getElementById('paginationSection').style.display = 'flex';
                 
-                // More International ETFs
-                {"Ticker":"VGK","Nome":"Vanguard FTSE Europe ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.08","AUM (B$)":"23.40","Prezzo":"67.80","Valuta":"USD","Volume":"1230000","Categoria":"Europe Stock","Provider":"Vanguard","YTD (%)":"13.4"},
-                {"Ticker":"VPL","Nome":"Vanguard FTSE Pacific ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.08","AUM (B$)":"5.60","Prezzo":"89.00","Valuta":"USD","Volume":"456000","Categoria":"Pacific/Asia Stock","Provider":"Vanguard","YTD (%)":"9.8"},
-                {"Ticker":"EWJ","Nome":"iShares MSCI Japan ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.50","AUM (B$)":"12.30","Prezzo":"78.90","Valuta":"USD","Volume":"3450000","Categoria":"Japan Stock","Provider":"iShares","YTD (%)":"18.9"},
-                
-                // Commodity ETFs
-                {"Ticker":"SLV","Nome":"iShares Silver Trust","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.50","AUM (B$)":"15.60","Prezzo":"28.90","Valuta":"USD","Volume":"12340000","Categoria":"Commodities Focused","Provider":"iShares","YTD (%)":"18.5"},
-                {"Ticker":"USO","Nome":"United States Oil Fund LP","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.79","AUM (B$)":"2.30","Prezzo":"78.90","Valuta":"USD","Volume":"5670000","Categoria":"Commodities Focused","Provider":"USO","YTD (%)":"15.2"},
-                {"Ticker":"DBA","Nome":"Invesco DB Agriculture Fund","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.93","AUM (B$)":"0.89","Prezzo":"23.40","Valuta":"USD","Volume":"890000","Categoria":"Commodities Focused","Provider":"Invesco","YTD (%)":"5.6"},
-                
-                // Thematic ETFs
-                {"Ticker":"ICLN","Nome":"iShares Global Clean Energy ETF","Domicilio":"US","Exchange":"NASDAQ","TER (%)":"0.42","AUM (B$)":"4.50","Prezzo":"15.60","Valuta":"USD","Volume":"3450000","Categoria":"Alternative Energy","Provider":"iShares","YTD (%)":"-8.9"},
-                {"Ticker":"ARKK","Nome":"ARK Innovation ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.75","AUM (B$)":"6.70","Prezzo":"56.70","Valuta":"USD","Volume":"7890000","Categoria":"Technology","Provider":"ARK","YTD (%)":"12.3"},
-                {"Ticker":"ARKG","Nome":"ARK Genomic Revolution ETF","Domicilio":"US","Exchange":"NYSE","TER (%)":"0.75","AUM (B$)":"1.20","Prezzo":"34.50","Valuta":"USD","Volume":"890000","Categoria":"Healthcare","Provider":"ARK","YTD (%)":"-15.6"},
-                
-                // Add more Italian ETFs
-                {"Ticker":"IMIB.MI","Nome":"iShares FTSE MIB UCITS ETF","Domicilio":"IT","Exchange":"Borsa Italiana","TER (%)":"0.33","AUM (B$)":"0.89","Prezzo":"28.50","Valuta":"EUR","Volume":"234000","Categoria":"Italy Stock","Provider":"iShares","YTD (%)":"18.9"},
-                {"Ticker":"PITL.MI","Nome":"Lyxor FTSE Italia PMI PIR UCITS ETF","Domicilio":"IT","Exchange":"Borsa Italiana","TER (%)":"0.35","AUM (B$)":"0.23","Prezzo":"15.60","Valuta":"EUR","Volume":"45000","Categoria":"Italy Small-Mid Cap","Provider":"Lyxor","YTD (%)":"12.3"},
-                
-                // UK ETFs  
-                {"Ticker":"ISF.L","Nome":"iShares Core FTSE 100 UCITS ETF","Domicilio":"UK","Exchange":"LSE","TER (%)":"0.07","AUM (B$)":"12.30","Prezzo":"7.89","Valuta":"GBP","Volume":"2340000","Categoria":"UK Large Cap","Provider":"iShares","YTD (%)":"8.5"},
-                {"Ticker":"VUKE.L","Nome":"Vanguard FTSE 100 UCITS ETF","Domicilio":"UK","Exchange":"LSE","TER (%)":"0.09","AUM (B$)":"3.40","Prezzo":"34.50","Valuta":"GBP","Volume":"567000","Categoria":"UK Large Cap","Provider":"Vanguard","YTD (%)":"8.3"},
-                
-                // German ETFs
-                {"Ticker":"EXS1.DE","Nome":"iShares Core DAX UCITS ETF","Domicilio":"DE","Exchange":"Xetra","TER (%)":"0.16","AUM (B$)":"8.90","Prezzo":"134.50","Valuta":"EUR","Volume":"890000","Categoria":"Germany Stock","Provider":"iShares","YTD (%)":"15.6"},
-                {"Ticker":"DAXEX.DE","Nome":"Xtrackers DAX UCITS ETF","Domicilio":"LU","Exchange":"Xetra","TER (%)":"0.09","AUM (B$)":"4.50","Prezzo":"145.60","Valuta":"EUR","Volume":"456000","Categoria":"Germany Stock","Provider":"Xtrackers","YTD (%)":"15.8"},
-                
-                // French ETFs
-                {"Ticker":"CAC.PA","Nome":"Lyxor CAC 40 UCITS ETF","Domicilio":"FR","Exchange":"Euronext Paris","TER (%)":"0.25","AUM (B$)":"2.30","Prezzo":"67.80","Valuta":"EUR","Volume":"234000","Categoria":"France Stock","Provider":"Lyxor","YTD (%)":"12.3"},
-                {"Ticker":"FCAC.PA","Nome":"Amundi CAC 40 UCITS ETF","Domicilio":"FR","Exchange":"Euronext Paris","TER (%)":"0.25","AUM (B$)":"1.80","Prezzo":"89.00","Valuta":"EUR","Volume":"123000","Categoria":"France Stock","Provider":"Amundi","YTD (%)":"12.1"}
-            ];
+            } catch (error) {
+                console.error('Errore caricamento dati:', error);
+                showError('❌ Errore nel caricamento: ' + error.message);
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
         }
         
-        // Display data in table
+        // ========================================
+        // AGGIORNAMENTO STATISTICHE
+        // ========================================
+        
+        function updateStatistics() {
+            const total = etfData.length;
+            
+            // Conta US ETFs
+            const usETFs = etfData.filter(etf => 
+                etf.domicilio?.toLowerCase() === 'usa' || 
+                etf.domicilio?.toLowerCase() === 'us'
+            ).length;
+            
+            // Conta EU ETFs
+            const euETFs = etfData.filter(etf => 
+                etf.domicilio?.toLowerCase() === 'ireland' || 
+                etf.domicilio?.toLowerCase() === 'luxembourg' ||
+                etf.domicilio?.toLowerCase() === 'ie' ||
+                etf.domicilio?.toLowerCase() === 'lu'
+            ).length;
+            
+            // Aggiorna i contatori
+            document.getElementById('totalETFs').textContent = total;
+            document.getElementById('usETFs').textContent = usETFs;
+            document.getElementById('euETFs').textContent = euETFs;
+            document.getElementById('etfCounter').textContent = `${total} ETFs loaded`;
+            
+            // Calcola percentuali
+            const usPercentage = total > 0 ? ((usETFs / total) * 100).toFixed(1) : 0;
+            const euPercentage = total > 0 ? ((euETFs / total) * 100).toFixed(1) : 0;
+            
+            document.getElementById('usPercentage').textContent = `${usPercentage}% of total`;
+            document.getElementById('euPercentage').textContent = `${euPercentage}% of total`;
+            
+            // Status database
+            document.getElementById('dbStatus').textContent = '✅';
+            document.getElementById('dbStatusText').textContent = 'Connected';
+        }
+        
+        // ========================================
+        // VISUALIZZAZIONE TABELLA
+        // ========================================
+        
         function displayData() {
-            const filteredData = filterData();
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
             const pageData = filteredData.slice(startIndex, endIndex);
@@ -1139,121 +776,125 @@
             const tbody = document.getElementById('etfTableBody');
             tbody.innerHTML = '';
             
+            if (pageData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-light);">
+                            Nessun ETF trovato
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
             pageData.forEach(etf => {
                 const row = document.createElement('tr');
                 
-                // Determine region badge
-                let regionBadge = '';
-                const domicilio = etf.Domicilio || '';
-                if (domicilio.includes('US')) {
-                    regionBadge = '<span class="badge badge-us">US</span>';
-                } else if (domicilio.includes('IE') || domicilio.includes('LU')) {
-                    regionBadge = '<span class="badge badge-eu">EU</span>';
-                } else if (domicilio.includes('UK')) {
-                    regionBadge = '<span class="badge badge-uk">UK</span>';
+                // Badge per domicilio
+                let domicileBadge = '';
+                const domicilio = etf.domicilio?.toLowerCase() || '';
+                if (domicilio.includes('usa') || domicilio.includes('us')) {
+                    domicileBadge = '<span class="badge badge-us">US</span>';
+                } else if (domicilio.includes('ireland') || domicilio.includes('ie')) {
+                    domicileBadge = '<span class="badge badge-eu">IE</span>';
+                } else if (domicilio.includes('luxembourg') || domicilio.includes('lu')) {
+                    domicileBadge = '<span class="badge badge-eu">LU</span>';
+                } else if (domicilio.includes('uk')) {
+                    domicileBadge = '<span class="badge badge-uk">UK</span>';
                 } else {
-                    regionBadge = '<span class="badge">Other</span>';
+                    domicileBadge = `<span class="badge">${etf.domicilio || 'N/A'}</span>`;
                 }
                 
-                // Format YTD
-                const ytd = parseFloat(etf['YTD (%)']) || 0;
-                const ytdClass = ytd >= 0 ? 'value-positive' : 'value-negative';
-                const ytdSign = ytd >= 0 ? '+' : '';
-                
                 row.innerHTML = `
-                    <td class="ticker-cell">${etf.Ticker || ''}</td>
-                    <td class="name-cell" title="${etf.Nome || ''}">${etf.Nome || ''}</td>
-                    <td>${regionBadge}</td>
-                    <td>${etf['TER (%)'] || '-'}</td>
-                    <td>${etf['AUM (B$)'] || '-'}</td>
-                    <td>$${parseFloat(etf.Prezzo || 0).toFixed(2)}</td>
-                    <td>${formatVolume(etf.Volume)}</td>
-                    <td class="${ytdClass}">${ytdSign}${ytd.toFixed(1)}%</td>
+                    <td class="ticker-cell">${etf.ticker || ''}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${etf.nome || ''}">${etf.nome || ''}</td>
+                    <td>${domicileBadge}</td>
+                    <td>${etf.exchange || 'N/A'}</td>
+                    <td>${etf['TER (%)'] || etf.ter || 'N/A'}</td>
                     <td>
-                        <button class="btn" onclick="viewETF('${etf.Ticker}')">View</button>
+                        <button class="btn" onclick="viewETF('${etf.ticker}')">View</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
             
-            // Update pagination info
-            document.getElementById('showingStart').textContent = startIndex + 1;
-            document.getElementById('showingEnd').textContent = Math.min(endIndex, filteredData.length);
-            document.getElementById('totalRecords').textContent = filteredData.length;
-            
-            // Update pagination buttons
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = endIndex >= filteredData.length;
+            updatePagination();
         }
         
-        // Filter data
+        // ========================================
+        // FILTRI E RICERCA
+        // ========================================
+        
         function filterData() {
-            return etfData.filter(etf => {
-                // Search filter
-                if (filters.search) {
-                    const search = filters.search.toLowerCase();
-                    const matchesSearch = 
-                        (etf.Ticker || '').toLowerCase().includes(search) ||
-                        (etf.Nome || '').toLowerCase().includes(search);
-                    if (!matchesSearch) return false;
+            const regionFilter = document.getElementById('regionFilter').value.toLowerCase();
+            const searchTerm = document.getElementById('tickerSearch').value.toLowerCase();
+            const globalSearch = document.getElementById('globalSearch').value.toLowerCase();
+            
+            filteredData = etfData.filter(etf => {
+                // Filtro regione
+                if (regionFilter) {
+                    const domicilio = etf.domicilio?.toLowerCase() || '';
+                    let matchesRegion = false;
+                    
+                    switch (regionFilter) {
+                        case 'usa':
+                            matchesRegion = domicilio.includes('usa') || domicilio.includes('us');
+                            break;
+                        case 'ireland':
+                            matchesRegion = domicilio.includes('ireland') || domicilio.includes('ie');
+                            break;
+                        case 'luxembourg':
+                            matchesRegion = domicilio.includes('luxembourg') || domicilio.includes('lu');
+                            break;
+                        case 'uk':
+                            matchesRegion = domicilio.includes('uk');
+                            break;
+                    }
+                    
+                    if (!matchesRegion) return false;
                 }
                 
-                // Region filter
-                if (filters.region) {
-                    const domicilio = etf.Domicilio || '';
-                    if (filters.region === 'US' && !domicilio.includes('US')) return false;
-                    if (filters.region === 'EU' && !domicilio.includes('IE') && !domicilio.includes('LU')) return false;
-                    if (filters.region === 'UK' && !domicilio.includes('UK')) return false;
+                // Filtro ricerca ticker
+                if (searchTerm) {
+                    const ticker = etf.ticker?.toLowerCase() || '';
+                    if (!ticker.includes(searchTerm)) return false;
                 }
                 
-                // Category filter
-                if (filters.category && etf.Categoria !== filters.category) {
-                    return false;
+                // Ricerca globale
+                if (globalSearch) {
+                    const ticker = etf.ticker?.toLowerCase() || '';
+                    const nome = etf.nome?.toLowerCase() || '';
+                    if (!ticker.includes(globalSearch) && !nome.includes(globalSearch)) {
+                        return false;
+                    }
                 }
                 
                 return true;
             });
-        }
-        
-        // Format volume
-        function formatVolume(volume) {
-            const num = parseInt(volume) || 0;
-            if (num >= 1000000) {
-                return (num / 1000000).toFixed(1) + 'M';
-            } else if (num >= 1000) {
-                return (num / 1000).toFixed(1) + 'K';
-            }
-            return num.toString();
-        }
-        
-        // Sorting
-        function sortTable(column) {
-            if (currentSort.column === column) {
-                currentSort.ascending = !currentSort.ascending;
-            } else {
-                currentSort.column = column;
-                currentSort.ascending = true;
-            }
             
-            etfData.sort((a, b) => {
-                let aVal = a[column] || '';
-                let bVal = b[column] || '';
-                
-                // Handle numeric columns
-                if (['TER (%)', 'AUM (B$)', 'Prezzo', 'Volume', 'YTD (%)'].includes(column)) {
-                    aVal = parseFloat(aVal) || 0;
-                    bVal = parseFloat(bVal) || 0;
-                }
-                
-                if (aVal < bVal) return currentSort.ascending ? -1 : 1;
-                if (aVal > bVal) return currentSort.ascending ? 1 : -1;
-                return 0;
-            });
-            
+            currentPage = 1;
             displayData();
         }
         
-        // Pagination
+        // ========================================
+        // PAGINAZIONE
+        // ========================================
+        
+        function updatePagination() {
+            const total = filteredData.length;
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, total);
+            const totalPages = Math.ceil(total / itemsPerPage);
+            
+            document.getElementById('showingStart').textContent = total > 0 ? startIndex + 1 : 0;
+            document.getElementById('showingEnd').textContent = endIndex;
+            document.getElementById('totalRecords').textContent = total;
+            document.getElementById('currentPageBtn').textContent = currentPage;
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        }
+        
         function previousPage() {
             if (currentPage > 1) {
                 currentPage--;
@@ -1262,299 +903,60 @@
         }
         
         function nextPage() {
-            const filteredData = filterData();
-            const maxPage = Math.ceil(filteredData.length / itemsPerPage);
-            if (currentPage < maxPage) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (currentPage < totalPages) {
                 currentPage++;
                 displayData();
             }
         }
         
-        // Search
-        document.getElementById('globalSearch').addEventListener('input', (e) => {
-            filters.search = e.target.value;
-            currentPage = 1;
-            displayData();
-        });
+        // ========================================
+        // FUNZIONI UTILITY
+        // ========================================
         
-        // Filter handlers
-        document.getElementById('regionFilter').addEventListener('change', (e) => {
-            filters.region = e.target.value;
-            currentPage = 1;
-            displayData();
-        });
-        
-        document.getElementById('categoryFilter').addEventListener('change', (e) => {
-            filters.category = e.target.value;
-            currentPage = 1;
-            displayData();
-        });
-        
-        // Page navigation
-        function showPage(page) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(p => {
-                p.style.display = 'none';
-                p.classList.remove('active');
-            });
-            
-            // Update nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Show selected page
-            let pageElement;
-            switch(page) {
-                case 'dashboard':
-                    pageElement = document.getElementById('dashboard-page');
-                    break;
-                case 'matcher':
-                    pageElement = document.getElementById('matcher-page');
-                    break;
-                case 'portfolio':
-                    pageElement = document.getElementById('portfolio-page');
-                    break;
-                case 'tax':
-                    pageElement = document.getElementById('tax-page');
-                    break;
-                default:
-                    pageElement = document.getElementById('dashboard-page');
-            }
-            
-            if (pageElement) {
-                pageElement.style.display = 'block';
-                pageElement.classList.add('active');
-            }
-            
-            // Update active nav
-            event.target.closest('.nav-item').classList.add('active');
+        function refreshData() {
+            loadETFData();
         }
         
-        // ETF Matcher Functions
-        function findMatches() {
-            const ticker = document.getElementById('matcherInput').value.toUpperCase();
-            const resultsDiv = document.getElementById('matchResults');
-            
-            if (!ticker) {
-                alert('Please enter a US ETF ticker');
-                return;
-            }
-            
-            // Find the US ETF
-            const usETF = etfData.find(etf => etf.Ticker === ticker);
-            
-            if (!usETF) {
-                resultsDiv.innerHTML = `
-                    <div class="stat-card">
-                        <p style="color: var(--stripe-red);">ETF "${ticker}" not found in database</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Find EU alternatives
-            const euAlternatives = etfMappings[ticker] || [];
-            
-            if (euAlternatives.length === 0) {
-                // Try to find similar ETFs by name/category
-                const similarEU = etfData.filter(etf => 
-                    (etf.Domicilio === 'IE' || etf.Domicilio === 'LU' || etf.Nome?.includes('UCITS')) &&
-                    etf.Categoria === usETF.Categoria
-                ).slice(0, 3);
-                
-                resultsDiv.innerHTML = `
-                    <h3 style="margin-bottom: 16px;">Results for ${ticker}</h3>
-                    <div class="stat-card">
-                        <h4>${usETF.Nome}</h4>
-                        <p style="margin: 12px 0;">No direct EU equivalent found, but here are similar UCITS ETFs:</p>
-                        ${similarEU.map(eu => `
-                            <div style="padding: 8px; background: var(--bg-fade); margin: 8px 0; border-radius: 4px;">
-                                <strong>${eu.Ticker}</strong> - ${eu.Nome}
-                                <br><small>TER: ${eu['TER (%)']}% | Category: ${eu.Categoria}</small>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            } else {
-                // Show matching EU ETFs
-                const euETFData = euAlternatives.map(euTicker => 
-                    etfData.find(etf => etf.Ticker === euTicker)
-                ).filter(Boolean);
-                
-                resultsDiv.innerHTML = `
-                    <h3 style="margin-bottom: 16px;">EU Alternatives for ${ticker}</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <h4>US ETF: ${ticker}</h4>
-                            <p>${usETF.Nome}</p>
-                            <div style="margin-top: 12px;">
-                                <small>TER: ${usETF['TER (%)']}%</small><br>
-                                <small>AUM: ${usETF['AUM (B$)']}B</small><br>
-                                <small>Exchange: ${usETF.Exchange}</small>
-                            </div>
-                        </div>
-                        ${euETFData.map(eu => `
-                            <div class="stat-card">
-                                <h4>EU Alternative: ${eu.Ticker}</h4>
-                                <p>${eu.Nome}</p>
-                                <div style="margin-top: 12px;">
-                                    <small>TER: ${eu['TER (%)']}%</small><br>
-                                    <small>AUM: ${eu['AUM (B$)']}B</small><br>
-                                    <small>Domicile: ${eu.Domicilio}</small>
-                                </div>
-                                <div class="badge badge-eu" style="margin-top: 8px;">UCITS Compliant</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
+        function exportData() {
+            console.log('Exporting data...', filteredData.length, 'records');
+            alert('Export feature coming soon!');
         }
         
-        // Portfolio Builder Functions
-        function addToPortfolio() {
-            const search = document.getElementById('portfolioSearch').value;
-            const shares = parseInt(document.getElementById('portfolioShares').value) || 0;
-            const price = parseFloat(document.getElementById('portfolioPrice').value) || 0;
-            
-            if (!search || shares <= 0) {
-                alert('Please enter ETF ticker and number of shares');
-                return;
-            }
-            
-            // Find ETF in database
-            const etf = etfData.find(e => 
-                e.Ticker.toUpperCase() === search.toUpperCase()
-            );
-            
-            if (!etf) {
-                alert('ETF not found');
-                return;
-            }
-            
-            const finalPrice = price || parseFloat(etf.Prezzo) || 100;
-            
-            portfolio.push({
-                ticker: etf.Ticker,
-                name: etf.Nome,
-                shares: shares,
-                price: finalPrice,
-                value: shares * finalPrice,
-                ter: parseFloat(etf['TER (%)']) || 0,
-                domicilio: etf.Domicilio
-            });
-            
-            updatePortfolioDisplay();
-            
-            // Clear inputs
-            document.getElementById('portfolioSearch').value = '';
-            document.getElementById('portfolioShares').value = '';
-            document.getElementById('portfolioPrice').value = '';
-        }
-        
-        function updatePortfolioDisplay() {
-            const listDiv = document.getElementById('portfolioList');
-            const totalValue = portfolio.reduce((sum, item) => sum + item.value, 0);
-            const weightedTER = portfolio.reduce((sum, item) => 
-                sum + (item.ter * item.value / totalValue), 0
-            );
-            
-            // Update summary
-            document.getElementById('portfolioValue').textContent = `${totalValue.toFixed(2)}`;
-            document.getElementById('portfolioCount').textContent = portfolio.length;
-            document.getElementById('portfolioTER').textContent = `${weightedTER.toFixed(3)}%`;
-            document.getElementById('portfolioCost').textContent = `${(totalValue * weightedTER / 100).toFixed(2)}`;
-            
-            // Update list
-            listDiv.innerHTML = portfolio.map((item, index) => `
-                <div style="padding: 12px; background: var(--bg-fade); margin: 8px 0; border-radius: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${item.ticker}</strong> - ${item.shares} shares @ ${item.price}
-                            <br><small>${item.name}</small>
-                        </div>
-                        <div style="text-align: right;">
-                            <strong>${item.value.toFixed(2)}</strong>
-                            <br><small>${((item.value / totalValue) * 100).toFixed(1)}%</small>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            
-            // Update allocation chart
-            const allocations = {};
-            portfolio.forEach(item => {
-                const region = item.domicilio || 'Unknown';
-                allocations[region] = (allocations[region] || 0) + item.value;
-            });
-            
-            const allocationDiv = document.getElementById('portfolioAllocation');
-            allocationDiv.innerHTML = Object.entries(allocations).map(([region, value]) => `
-                <div style="margin: 8px 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <small>${region}</small>
-                        <small>${((value / totalValue) * 100).toFixed(1)}%</small>
-                    </div>
-                    <div style="background: var(--border-light); height: 8px; border-radius: 4px;">
-                        <div style="background: var(--stripe-blue); height: 100%; width: ${(value / totalValue) * 100}%; border-radius: 4px;"></div>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        // Tax Calculator Functions
-        function calculateTax() {
-            const country = document.getElementById('taxCountry').value;
-            const domicile = document.getElementById('taxDomicile').value;
-            const amount = parseFloat(document.getElementById('taxAmount').value) || 10000;
-            const yieldPct = parseFloat(document.getElementById('taxYield').value) || 2;
-            
-            const annualDividends = amount * (yieldPct / 100);
-            const taxRate = taxRates[country][domicile] || 0;
-            const withholdingTax = annualDividends * (taxRate / 100);
-            const netDividends = annualDividends - withholdingTax;
-            const tenYearCost = withholdingTax * 10;
-            
-            // Update results
-            document.getElementById('annualDividends').textContent = `€${annualDividends.toFixed(2)}`;
-            document.getElementById('withholdingTax').textContent = `€${withholdingTax.toFixed(2)}`;
-            document.getElementById('netDividends').textContent = `€${netDividends.toFixed(2)}`;
-            document.getElementById('tenYearCost').textContent = `€${tenYearCost.toFixed(2)}`;
-            document.getElementById('taxRate').textContent = `${taxRate}% rate`;
-            
-            // Update comparison table
-            const usRate = taxRates[country]['US'];
-            const ieRate = taxRates[country]['IE'];
-            const usTax = annualDividends * (usRate / 100);
-            const ieTax = annualDividends * (ieRate / 100);
-            
-            document.getElementById('taxComparisonTable').innerHTML = `
-                <tr>
-                    <td>US ETF (Direct)</td>
-                    <td>${usRate}%</td>
-                    <td>€${usTax.toFixed(2)}</td>
-                    <td>€${(usTax * 10).toFixed(2)}</td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td>Ireland UCITS ETF</td>
-                    <td>${ieRate}%</td>
-                    <td>€${ieTax.toFixed(2)}</td>
-                    <td>€${(ieTax * 10).toFixed(2)}</td>
-                    <td class="value-positive">Save €${((usTax - ieTax) * 10).toFixed(2)}</td>
-                </tr>
-            `;
-        }
-        
-        // View ETF details
         function viewETF(ticker) {
             console.log('Viewing ETF:', ticker);
-            // Here you would show ETF details modal or page
+            alert(`ETF Details for ${ticker} - Feature coming soon!`);
         }
         
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', () => {
-            loadETFData();
+        function showError(message) {
+            const status = document.getElementById('connectionStatus');
+            status.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        function showSuccess(message) {
+            const status = document.getElementById('connectionStatus');
+            status.innerHTML = `<div class="success-message">${message}</div>`;
+            setTimeout(() => {
+                status.innerHTML = '';
+            }, 3000);
+        }
+        
+        function showPage(page) {
+            console.log('Navigating to page:', page);
+            // Page navigation logic here
+        }
+        
+        // ========================================
+        // EVENT LISTENERS
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            
+            // Setup filtri
+            document.getElementById('regionFilter').addEventListener('change', filterData);
+            document.getElementById('tickerSearch').addEventListener('input', filterData);
+            document.getElementById('globalSearch').addEventListener('input', filterData);
         });
     </script>
 </body>
